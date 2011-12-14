@@ -1,0 +1,12 @@
+<% if @venues.length > 0 : %>
+     <ul id="venues-view" data-role="listview"> 
+ 		<% for venue in @venues.models : %>
+        	<li id="<%=venue.attributes.id %>"> 
+				<%= venue.attributes.title %>
+				<%= venue.attributes.text %>
+			</li>
+    	<% end %>
+    </ul>
+<% else : %>
+    <h3>No venues! </h3>
+<% end %>

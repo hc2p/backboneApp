@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.0b1/jquery.mobile-1.0b1.min.css" />
+  <link rel="stylesheet" href="build/web/css/main.css" type="text/css" media="screen">
+<script type="text/javascript" src="venueData.js"></script>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
+<script type="text/javascript">
+      $(document).bind("mobileinit", function(){
+        $.mobile.ajaxEnabled = false;
+        $.mobile.hashListeningEnabled = false;
+      });
+
+	function onBodyLoad(){
+	  		document.addEventListener("deviceready",onDeviceReady,false);
+
+	  		// Call jquery.ready() for symbian devices that don't seem to trigger it
+	  		jQuery.ready();
+	  	}
+
+	  	function onDeviceReady(){
+	  	}
+    </script>
+	<script type="text/javascript" src="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.js"></script>
+
+  	<script src="build/web/js/app.js"></script>
+  	<script>
+		require('main');
+	</script>
+	
+</head>
+<body onload="onBodyLoad()">
+<div id="homepage" data-role="page">	
+	<div data-role="header">
+		<h1>happenApp</h1>
+	</div>
+	<div id="home-view" data-role="content">
+		
+		<div id="list"></div>
+	</div>
+	<div id="footer"></div>
+</div>
+</body>
+</html>
