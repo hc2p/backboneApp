@@ -13,24 +13,25 @@ class exports.VenueView extends Backbone.View
 	
 	render: -> 
 		console.log 'venue detail-view render'
-		console.log @model
-		console.log venueTemplate(venue : @model)
-		$('body').append venueTemplate(venue : @model)
-		console.log("'#venue' + @model.id",'#venue-' + @model.id)
-		app.redirectTo('#venue-' + @model.id)
+		
 		@el = '#venue-' + @model.id
-		console.log("venue detail-view: ", this)
+		
+		if $('#venue-' + @model.id).length == 0
+			console.log("render #venue-" + @model.id + "new")
 
-		# A hacky way of reapplying the jquery mobile styles
-		app.reapplyStyles(app.activePage())
-		#$('#venues-view').page()
-		# Delegate from the events hash
-		@delegateEvents()
+			$('body').append venueTemplate(venue : @model)
+
+			# A hacky way of reapplying the jquery mobile styles
+			app.reapplyStyles(app.activePage())
+			$('#venue-' + @model.id).trigger('create')
+		
+			#Delegate from the events hash
+			@delegateEvents()
+		
+		app.redirectTo(@el, false)
 		@
 		
 	backButtonClicked: ->
 		console.log("backButtonClicked")
-		console.log("remove el: ", @el)
-		@remove()
 		app.redirectTo("#homepage")
 		#app.routers.main.navigate "home", true

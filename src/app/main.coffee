@@ -9,9 +9,12 @@ window.app =
 		el.find('input,textarea').textinput()
 		el.page()
 
-	redirectTo: (page) ->
+	redirectTo: (page, slideBack) ->
 		console.log "go to page" , page
-		$.mobile.changePage page , 'slide' , true , true
+		$.mobile.changePage page , 
+			transition	: 'slide' 
+			reverse 	: slideBack
+			changeHash	: false
 
 	goBack: ->
     	$.historyBack()

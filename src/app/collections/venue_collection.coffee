@@ -7,9 +7,7 @@ class exports.Venues extends Backbone.Collection
 	
 	constructor: ->
 		super
-		console.log(venueData)
 		@reset(venueData)
-		console.log(@)
 		
 	initialize: ->
 		@localStorage = new Store "venues"

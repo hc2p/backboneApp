@@ -1,9 +1,11 @@
 <% if @venues.length > 0 : %>
      <ul id="venues-view" data-role="listview"> 
  		<% for venue in @venues.models : %>
-        	<li id="<%=venue.attributes.id %>"> 
-				<%= venue.attributes.title %>
-				<%= venue.attributes.text %>
+        	<li > 
+				<a id="<%=venue.attributes.id %>" href="#venue-<%=venue.attributes.id %>" >
+					<%= venue.attributes.title %>
+					<%= venue.attributes.text %>
+				</a>
 			</li>
     	<% end %>
     </ul>

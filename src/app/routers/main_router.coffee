@@ -9,6 +9,7 @@ class exports.MainRouter extends Backbone.Router
 		"venue-:id" 	: "showVenue"
 
 	home: ->
+		console.log "route home"
 		app.views.main.render()
 		###
 		app.collections.venues.fetch(
@@ -19,6 +20,7 @@ class exports.MainRouter extends Backbone.Router
 		###
 		
 	showVenue : (id) ->
+		console.log "route showVenue " + id
 		venue = app.collections.venues.get(id)
 			
 		app.views.venue = new VenueView({model : venue})

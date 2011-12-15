@@ -2173,9 +2173,7 @@ Backbone.sync = function(method, model, options, error) {
 
     function Venues() {
       Venues.__super__.constructor.apply(this, arguments);
-      console.log(venueData);
       this.reset(venueData);
-      console.log(this);
     }
 
     Venues.prototype.initialize = function() {
@@ -2203,9 +2201,13 @@ Backbone.sync = function(method, model, options, error) {
       el.find('input,textarea').textinput();
       return el.page();
     },
-    redirectTo: function(page) {
+    redirectTo: function(page, slideBack) {
       console.log("go to page", page);
-      return $.mobile.changePage(page, 'slide', true, true);
+      return $.mobile.changePage(page, {
+        transition: 'slide',
+        reverse: slideBack,
+        changeHash: false
+      });
     },
     goBack: function() {
       return $.historyBack();
@@ -2296,6 +2298,7 @@ Backbone.sync = function(method, model, options, error) {
     };
 
     MainRouter.prototype.home = function() {
+      console.log("route home");
       return app.views.main.render();
       /*
       		app.collections.venues.fetch(
@@ -2308,6 +2311,7 @@ Backbone.sync = function(method, model, options, error) {
 
     MainRouter.prototype.showVenue = function(id) {
       var venue;
+      console.log("route showVenue " + id);
       venue = app.collections.venues.get(id);
       app.views.venue = new VenueView({
         model: venue
@@ -2422,13 +2426,15 @@ Backbone.sync = function(method, model, options, error) {
         _ref = this.venues.models;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           venue = _ref[_i];
-          __out.push('\n        \t<li id="');
+          __out.push('\n        \t<li > \n\t\t\t\t<a id="');
           __out.push(__sanitize(venue.attributes.id));
-          __out.push('"> \n\t\t\t\t');
+          __out.push('" href="#venue-');
+          __out.push(__sanitize(venue.attributes.id));
+          __out.push('" >\n\t\t\t\t\t');
           __out.push(__sanitize(venue.attributes.title));
-          __out.push('\n\t\t\t\t');
+          __out.push('\n\t\t\t\t\t');
           __out.push(__sanitize(venue.attributes.text));
-          __out.push('\n\t\t\t</li>\n    \t');
+          __out.push('\n\t\t\t\t</a>\n\t\t\t</li>\n    \t');
         }
         __out.push('\n    </ul>\n');
       } else {
@@ -2466,26 +2472,22 @@ Backbone.sync = function(method, model, options, error) {
 
     VenueView.prototype.render = function() {
       console.log('venue detail-view render');
-      console.log(this.model);
-      console.log(venueTemplate({
-        venue: this.model
-      }));
-      $('body').append(venueTemplate({
-        venue: this.model
-      }));
-      console.log("'#venue' + @model.id", '#venue-' + this.model.id);
-      app.redirectTo('#venue-' + this.model.id);
       this.el = '#venue-' + this.model.id;
-      console.log("venue detail-view: ", this);
-      app.reapplyStyles(app.activePage());
-      this.delegateEvents();
+      if ($('#venue-' + this.model.id).length === 0) {
+        console.log("render #venue-" + this.model.id + "new");
+        $('body').append(venueTemplate({
+          venue: this.model
+        }));
+        app.reapplyStyles(app.activePage());
+        $('#venue-' + this.model.id).trigger('create');
+        this.delegateEvents();
+      }
+      app.redirectTo(this.el, false);
       return this;
     };
 
     VenueView.prototype.backButtonClicked = function() {
       console.log("backButtonClicked");
-      console.log("remove el: ", this.el);
-      this.remove();
       return app.redirectTo("#homepage");
     };
 
@@ -2512,7 +2514,7 @@ Backbone.sync = function(method, model, options, error) {
 
     VenuesView.prototype.id = 'venues-view';
 
-    VenuesView.prototype.el = "#list";
+    VenuesView.prototype.el = "#homepage";
 
     VenuesView.prototype.events = {
       "click li": "open"
@@ -2520,24 +2522,22 @@ Backbone.sync = function(method, model, options, error) {
 
     VenuesView.prototype.initialize = function() {
       console.log('venues view init');
-      console.log("venues-view: ", this);
       return this.collection.view = this;
     };
 
     VenuesView.prototype.render = function() {
       console.log('venues view render');
-      $(this.el).html(venuesTemplate({
+      $('#list', this.el).html(venuesTemplate({
         venues: this.collection
       }));
       app.reapplyStyles(app.activePage());
-      this.delegateEvents();
       return this;
     };
 
     VenuesView.prototype.open = function(el) {
       var id;
       id = el.target.id;
-      console.log(id);
+      console.log("open venue detail: " + id);
       return app.routers.main.navigate("venue-" + id, true);
     };
 

@@ -9,7 +9,7 @@ class exports.VenuesView extends Backbone.View
 	
 	id : 'venues-view'
  
-	el : "#list"
+	el : "#homepage"
 	
 	events: 
 		"click li" : "open"
@@ -17,22 +17,24 @@ class exports.VenuesView extends Backbone.View
 	
 	initialize: -> 
 		console.log 'venues view init'
-		console.log("venues-view: ", this)
 		@collection.view = @
 		
 	render: -> 
 		console.log 'venues view render'
 	
-		$(@el).html venuesTemplate(venues : @collection)
+		$('#list', @el).html venuesTemplate(venues : @collection)
 		
 		# A hacky way of reapplying the jquery mobile styles
 		app.reapplyStyles(app.activePage())
 		# Delegate from the events hash
-		@delegateEvents()
+		#@delegateEvents()
+	
+		#app.redirectTo(@el, false)
 	
 		@
 		
 	open : (el)->
 		id = el.target.id
-		console.log id 
+		console.log "open venue detail: " + id 
+		#app.redirectTo("#venue-" + id)
 		app.routers.main.navigate "venue-"+id, true
