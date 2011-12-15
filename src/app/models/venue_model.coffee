@@ -4,6 +4,7 @@ class exports.Venue extends Backbone.Model
 	
 	getTitle : -> 
 		@title
+
 		
 	url : ->
 		base = 'users/'

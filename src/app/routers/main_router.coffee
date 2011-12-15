@@ -1,12 +1,15 @@
 
-VenuesView = require('views/venues_view').VenuesView
+Venue = require('models/venue_model').Venue
+VenueView = require('views/venue_view').VenueView
+
 
 class exports.MainRouter extends Backbone.Router
 	routes :
-		"home": "home"
+		"home"			: "home"
+		"venue-:id" 	: "showVenue"
 
 	home: ->
-		new VenuesView({ collection: app.collections.venues })
+		app.views.main.render()
 		###
 		app.collections.venues.fetch(
 		
@@ -14,3 +17,9 @@ class exports.MainRouter extends Backbone.Router
 				new VenuesView({ collection: app.collections.venues }) 
 		)
 		###
+		
+	showVenue : (id) ->
+		venue = app.collections.venues.get(id)
+			
+		app.views.venue = new VenueView({model : venue})
+		app.views.venue.render()

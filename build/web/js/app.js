@@ -2009,6 +2009,107 @@
 
 }).call(this);
 
+/**
+ * Backbone localStorage Adapter v1.0
+ * https://github.com/jeromegn/Backbone.localStorage
+ *
+ * Date: Sun Aug 14 2011 09:53:55 -0400
+ */
+
+// A simple module to replace `Backbone.sync` with *localStorage*-based
+// persistence. Models are given GUIDS, and saved into a JSON object. Simple
+// as that.
+
+// Generate four random hex digits.
+function S4() {
+   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+};
+
+// Generate a pseudo-GUID by concatenating random hexadecimal.
+function guid() {
+   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+};
+
+// Our Store is represented by a single JS object in *localStorage*. Create it
+// with a meaningful name, like the name you'd give a table.
+window.Store = function(name) {
+  this.name = name;
+  var store = localStorage.getItem(this.name);
+  this.records = (store && store.split(",")) || [];
+};
+
+_.extend(Store.prototype, {
+
+  // Save the current state of the **Store** to *localStorage*.
+  save: function() {
+    localStorage.setItem(this.name, this.records.join(","));
+  },
+
+  // Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
+  // have an id of it's own.
+  create: function(model) {
+    if (!model.id) model.id = model.attributes.id = guid();
+    localStorage.setItem(this.name+"-"+model.id, JSON.stringify(model));
+    this.records.push(model.id.toString());
+    this.save();
+    return model;
+  },
+
+  // Update a model by replacing its copy in `this.data`.
+  update: function(model) {
+    localStorage.setItem(this.name+"-"+model.id, JSON.stringify(model));
+    if (!_.include(this.records, model.id.toString())) this.records.push(model.id.toString()); this.save();
+    return model;
+  },
+
+  // Retrieve a model from `this.data` by id.
+  find: function(model) {
+    return JSON.parse(localStorage.getItem(this.name+"-"+model.id));
+  },
+
+  // Return the array of all models currently in storage.
+  findAll: function() {
+    return _.map(this.records, function(id){return JSON.parse(localStorage.getItem(this.name+"-"+id));}, this);
+  },
+
+  // Delete a model from `this.data`, returning it.
+  destroy: function(model) {
+    localStorage.removeItem(this.name+"-"+model.id);
+    this.records = _.reject(this.records, function(record_id){return record_id == model.id.toString();});
+    this.save();
+    return model;
+  }
+
+});
+
+// Override `Backbone.sync` to use delegate to the model or collection's
+// *localStorage* property, which should be an instance of `Store`.
+Backbone.sync = function(method, model, options, error) {
+
+  // Backwards compatibility with Backbone <= 0.3.3
+  if (typeof options == 'function') {
+    options = {
+      success: options,
+      error: error
+    };
+  }
+
+  var resp;
+  var store = model.localStorage || model.collection.localStorage;
+
+  switch (method) {
+    case "read":    resp = model.id ? store.find(model) : store.findAll(); break;
+    case "create":  resp = store.create(model);                            break;
+    case "update":  resp = store.update(model);                            break;
+    case "delete":  resp = store.destroy(model);                           break;
+  }
+
+  if (resp) {
+    options.success(resp);
+  } else {
+    options.error("Record not found");
+  }
+};
 (function(/*! Stitch !*/) {
   if (!this.require) {
     var modules = {}, cache = {}, require = function(name, root) {
@@ -2070,10 +2171,6 @@
 
     Venues.prototype.model = Venue;
 
-    Venues.prototype.events = {
-      'click': 'showVenue'
-    };
-
     function Venues() {
       Venues.__super__.constructor.apply(this, arguments);
       console.log(venueData);
@@ -2081,16 +2178,11 @@
       console.log(this);
     }
 
-    /*
-    	initialize: ->
-    		@localStorage = new Store "venues"
-    */
+    Venues.prototype.initialize = function() {
+      return this.localStorage = new Store("venues");
+    };
 
     Venues.prototype.url = '/';
-
-    Venues.prototype.showVenue = function() {
-      return console.log(this);
-    };
 
     return Venues;
 
@@ -2098,7 +2190,7 @@
 
 }).call(this);
 }, "main": function(exports, require, module) {(function() {
-  var MainRouter, Venue, Venues;
+  var MainRouter, Venue, Venues, VenuesView;
 
   window.app = {
     activePage: function() {
@@ -2112,7 +2204,8 @@
       return el.page();
     },
     redirectTo: function(page) {
-      return $.mobile.changePage(page);
+      console.log("go to page", page);
+      return $.mobile.changePage(page, 'slide', true, true);
     },
     goBack: function() {
       return $.historyBack();
@@ -2129,12 +2222,17 @@
 
   MainRouter = require('routers/main_router').MainRouter;
 
+  VenuesView = require('views/venues_view').VenuesView;
+
   Backbone.serverSync = Backbone.sync;
 
   $(document).ready(function() {
     app.initialize = function() {
       app.collections.venues = new Venues();
       app.routers.main = new MainRouter();
+      app.views.main = new VenuesView({
+        collection: app.collections.venues
+      });
       if (Backbone.history.getFragment() === '') {
         return Backbone.history.navigate('home', true);
       }
@@ -2177,10 +2275,12 @@
 
 }).call(this);
 }, "routers/main_router": function(exports, require, module) {(function() {
-  var VenuesView;
+  var Venue, VenueView;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
-  VenuesView = require('views/venues_view').VenuesView;
+  Venue = require('models/venue_model').Venue;
+
+  VenueView = require('views/venue_view').VenueView;
 
   exports.MainRouter = (function() {
 
@@ -2191,13 +2291,12 @@
     }
 
     MainRouter.prototype.routes = {
-      "home": "home"
+      "home": "home",
+      "venue-:id": "showVenue"
     };
 
     MainRouter.prototype.home = function() {
-      return new VenuesView({
-        collection: app.collections.venues
-      });
+      return app.views.main.render();
       /*
       		app.collections.venues.fetch(
       		
@@ -2205,6 +2304,15 @@
       				new VenuesView({ collection: app.collections.venues }) 
       		)
       */
+    };
+
+    MainRouter.prototype.showVenue = function(id) {
+      var venue;
+      venue = app.collections.venues.get(id);
+      app.views.venue = new VenueView({
+        model: venue
+      });
+      return app.views.venue.render();
     };
 
     return MainRouter;
@@ -2251,15 +2359,19 @@
   }
   (function() {
     
-      __out.push('<p>');
+      __out.push('<div id="venue-');
     
-      this.title;
+      __out.push(__sanitize(this.venue.attributes.id));
     
-      __out.push('</p>\n<p>');
+      __out.push('" data-role="page">\n\t<div data-role="header">\n\t\t<h1>happenApp</h1>\n\t</div>\n\t<div data-role="content">\n\t\t<div style="background-color: red">\n\t\t\t<p>');
     
-      this.text;
+      __out.push(__sanitize(this.venue.attributes.title));
     
-      __out.push('</p>\n');
+      __out.push('</p>\n\t\t\t<p>');
+    
+      __out.push(__sanitize(this.venue.attributes.text));
+    
+      __out.push('</p>\n\t\t</div>\n\t</div>\n\t<div id="footer"></div>\n</div>');
     
   }).call(__obj);
   __obj.safe = __objSafe, __obj.escape = __escape;
@@ -2328,11 +2440,67 @@
   }).call(__obj);
   __obj.safe = __objSafe, __obj.escape = __escape;
   return __out.join('');
-}}, "views/venues_view": function(exports, require, module) {(function() {
-  var venuesTemplate;
+}}, "views/venue_view": function(exports, require, module) {(function() {
+  var venueTemplate;
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  venueTemplate = require('templates/venue');
+
+  exports.VenueView = (function() {
+
+    __extends(VenueView, Backbone.View);
+
+    function VenueView() {
+      VenueView.__super__.constructor.apply(this, arguments);
+    }
+
+    VenueView.prototype.id = 'venue-view';
+
+    VenueView.prototype.events = {
+      "click .ui-btn-text": 'backButtonClicked'
+    };
+
+    VenueView.prototype.initialize = function() {
+      return console.log('venue detail-view init');
+    };
+
+    VenueView.prototype.render = function() {
+      console.log('venue detail-view render');
+      console.log(this.model);
+      console.log(venueTemplate({
+        venue: this.model
+      }));
+      $('body').append(venueTemplate({
+        venue: this.model
+      }));
+      console.log("'#venue' + @model.id", '#venue-' + this.model.id);
+      app.redirectTo('#venue-' + this.model.id);
+      this.el = '#venue-' + this.model.id;
+      console.log("venue detail-view: ", this);
+      app.reapplyStyles(app.activePage());
+      this.delegateEvents();
+      return this;
+    };
+
+    VenueView.prototype.backButtonClicked = function() {
+      console.log("backButtonClicked");
+      console.log("remove el: ", this.el);
+      this.remove();
+      return app.redirectTo("#homepage");
+    };
+
+    return VenueView;
+
+  })();
+
+}).call(this);
+}, "views/venues_view": function(exports, require, module) {(function() {
+  var MainRouter, venuesTemplate;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   venuesTemplate = require('templates/venues');
+
+  MainRouter = require('routers/main_router').MainRouter;
 
   exports.VenuesView = (function() {
 
@@ -2352,32 +2520,25 @@
 
     VenuesView.prototype.initialize = function() {
       console.log('venues view init');
-      _.bindAll(this, 'render');
-      this.collection.bind('change', this.render);
-      this.collection.bind('add', this.render);
-      this.collection.bind('reset', this.render);
-      this.render();
       console.log("venues-view: ", this);
       return this.collection.view = this;
     };
 
     VenuesView.prototype.render = function() {
       console.log('venues view render');
-      console.log(this.collection);
-      console.log(venuesTemplate({
-        venues: this.collection
-      }));
       $(this.el).html(venuesTemplate({
         venues: this.collection
       }));
-      console.log("venues-view2: ", this);
       app.reapplyStyles(app.activePage());
       this.delegateEvents();
       return this;
     };
 
     VenuesView.prototype.open = function(el) {
-      return console.log(el.target.id);
+      var id;
+      id = el.target.id;
+      console.log(id);
+      return app.routers.main.navigate("venue-" + id, true);
     };
 
     return VenuesView;

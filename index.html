@@ -10,8 +10,11 @@
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
 <script type="text/javascript">
       $(document).bind("mobileinit", function(){
-        $.mobile.ajaxEnabled = false;
-        $.mobile.hashListeningEnabled = false;
+       	$.mobile.ajaxEnabled = false;
+		  $.mobile.hashListeningEnabled = false;
+		  $.mobile.pushStateEnabled = false;
+		  $.mobile.changePage.defaults.changeHash = false;
+		$.mobile.page.prototype.options.addBackBtn = true;
       });
 
 	function onBodyLoad(){
@@ -43,5 +46,6 @@
 	</div>
 	<div id="footer"></div>
 </div>
+
 </body>
 </html>
