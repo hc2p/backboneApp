@@ -1,24 +1,7 @@
+window.log = (val) ->
+	console.log val
+
 window.app =
-	activePage: ->
-    	$(".ui-page-active")
-
-	reapplyStyles: (el) ->
-		el.find('ul[data-role]').listview()
-		el.find('div[data-role="fieldcontain"]').fieldcontain()
-		el.find('button[data-role="button"]').button()
-		el.find('input,textarea').textinput()
-		el.page()
-
-	redirectTo: (page, slideBack) ->
-		console.log "go to page" , page
-		$.mobile.changePage page , 
-			transition	: 'slide' 
-			reverse 	: slideBack
-			changeHash	: false
-
-	goBack: ->
-    	$.historyBack()
-
 	routers:
 		{}
 	models :
@@ -26,22 +9,23 @@ window.app =
 	collections :
 		{}
 	views:
-		{}
+		pages:
+			{}
 
-Venue = require('models/venue_model').Venue
-Venues = require('collections/venue_collection').Venues
+Page = require('models/page_model').Page
+Pages = require('collections/page_collection').Pages
 MainRouter = require('routers/main_router').MainRouter
-VenuesView = require('views/venues_view').VenuesView
+AppView = require('views/app_view').AppView
 
 Backbone.serverSync = Backbone.sync
 
 # app bootstrapping on document ready
 $(document).ready ->
 	app.initialize = ->
-		app.collections.venues = new Venues()
+		app.collections.pages = new Pages()
 		app.routers.main = new MainRouter()
-		app.views.main = new VenuesView({ collection: app.collections.venues })
-		Backbone.history.navigate 'home', true if Backbone.history.getFragment() is ''
-	
+		app.views.pages.app = new AppView({ collection: app.collections.pages})
+		Backbone.history.navigate '/page/home', true if Backbone.history.getFragment() is ''
+
 	app.initialize()
 	Backbone.history.start()

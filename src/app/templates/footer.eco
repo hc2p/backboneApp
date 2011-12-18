@@ -1,0 +1,9 @@
+<ul>
+	<% for page in @collection.models: %>
+		<li class="">
+			<a href="#/page/<%=page.attributes.name%>" >
+				<%=page.attributes.title%>
+			</a>
+		</li>
+	<% end %>
+</ul>

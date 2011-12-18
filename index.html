@@ -1,56 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" manifest="manifest.php?id=1">
 <head>
 	<title>happenApp</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1"> 
-<link rel="stylesheet" href="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.css" />
-  <!--
+
 	<link rel="stylesheet" href="build/web/css/main.css" type="text/css" media="screen">
-	-->
-<script type="text/javascript" src="venueData.js"></script>
-
-<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
-<script type="text/javascript">
-      $(document).bind("mobileinit", function(){
-       
-		$.mobile.ajaxEnabled = false;
-		  $.mobile.hashListeningEnabled = false;
-		  $.mobile.pushStateEnabled = false;
-		  $.mobile.changePage.defaults.changeHash = false;
-	//	$.mobile.linkBindingEnabled = false;
-		
-		$.mobile.page.prototype.options.addBackBtn = true;
-      });
-
-	function onBodyLoad(){
-	  		document.addEventListener("deviceready",onDeviceReady,false);
-
-	  		// Call jquery.ready() for symbian devices that don't seem to trigger it
-	  		jQuery.ready();
-	  	}
-
-	  	function onDeviceReady(){
-	  	}
-    </script>
-	<script type="text/javascript" src="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.js"></script>
-
+	
   	<script src="build/web/js/app.js"></script>
   	<script>
 		require('main');
 	</script>
 	
 </head>
-<body onload="onBodyLoad()">
-<div id="homepage" data-role="page">	
-	<div data-role="header">
-		<h1>happenApp</h1>
-	</div>
-	<div id="home-view" data-role="content">
-		
-		<div id="list"></div>
-	</div>
-	<div id="footer"></div>
-</div>
+<body>
+	<div id="container">
+		<header>
+			<h1>HappenApp</h1>
+			<div data-role="nav-bar">
+				<div><a href="#page/home">Home</a></div>
+				<div><a href="#page/venues">Veranstaltungen</a></div>
+			</div>
+		</header>
+		<content>
+			<script id="pages-template" type="text/underscore-tmpl">
 
+				<div data-role="page" id="<%=name%>-<%=type%>-page">
+					
+					<% switch (type) { 
+						
+						case 'list' : %>
+						<ul id="<%=name%>-list">
+							<% _.each(subpages, function(page) { %>
+								
+								<li id="<%=name%>-list-<%=id%>">
+									<h3><%=page.title%></h3>
+									<p><%=page.date%></p>
+									<input id="venueCheckBox<%=id%>" class="venueCheckBox" type="checkbox" name="saved" />
+								</li>
+							
+							<% }) %>
+						</ul>		
+					<% break;
+						case 'single' : %>
+							<h3><%=title%></h3>
+							<p><%=text%></p>
+						break;
+					<% } %>
+				</div>
+			</script>
+		</content>
+
+		<footer>
+			<ul>
+				<li>Home</li>
+				<li>Veranstaltungen</li>
+			</ul>
+		</footer>
+	</div> <!--! end of #container -->
 </body>
 </html>
