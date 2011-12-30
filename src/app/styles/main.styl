@@ -1,6 +1,8 @@
+//@import add2home
+
 @import boilerplate
 
-#venuesList li:hover 
+li:hover 
 	background-color: red
 
 .ui-active-page 
@@ -10,26 +12,41 @@
 
 content 
 	width: 100%
+	height: 80%
 	overflow: hidden
+	display: block
+	
+	li
+		margin: 5px
+		list-style: none
+		padding: 5px
+		border: 1px solid grey
+		
 
 
 footer 
-
 	position: fixed
 	bottom: 0
 
+footer, header
+	li
+		float: left
+		margin: 5px
+		list-style: none
+		padding: 5px
+		border: 1px solid grey
+	
+	height: 10%
 
 div[data-role=page] 
 	display: none
 	position: absolute
-
 	width: 100%
 
 
 .in, .out 
 	-webkit-animation-timing-function: ease-in-out
-	-webkit-animation-duration: 350ms
-
+	-webkit-animation-duration: 800ms
 
 
 .slideleft.in 

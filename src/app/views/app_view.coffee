@@ -13,4 +13,5 @@ class exports.AppView extends Backbone.View
 		log "render appView"
 		$('header').html headerTemplate(collection: @collection)
 		$('footer').html footerTemplate(collection : @collection)
+		@delegateEvents()
 		@

@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="en" manifest="manifest.php?id=1">
+<html manifest="manifest.php">
 <head>
 	<title>happenApp</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
+	<link rel="stylesheet" href="legacy/css/add2home.css" type="text/css" media="screen">
+	
 	<link rel="stylesheet" href="build/web/css/main.css" type="text/css" media="screen">
 	
   	<script src="build/web/js/app.js"></script>
@@ -13,49 +17,11 @@
 	
 </head>
 <body>
-	<div id="container">
 		<header>
-			<h1>HappenApp</h1>
-			<div data-role="nav-bar">
-				<div><a href="#page/home">Home</a></div>
-				<div><a href="#page/venues">Veranstaltungen</a></div>
-			</div>
 		</header>
 		<content>
-			<script id="pages-template" type="text/underscore-tmpl">
-
-				<div data-role="page" id="<%=name%>-<%=type%>-page">
-					
-					<% switch (type) { 
-						
-						case 'list' : %>
-						<ul id="<%=name%>-list">
-							<% _.each(subpages, function(page) { %>
-								
-								<li id="<%=name%>-list-<%=id%>">
-									<h3><%=page.title%></h3>
-									<p><%=page.date%></p>
-									<input id="venueCheckBox<%=id%>" class="venueCheckBox" type="checkbox" name="saved" />
-								</li>
-							
-							<% }) %>
-						</ul>		
-					<% break;
-						case 'single' : %>
-							<h3><%=title%></h3>
-							<p><%=text%></p>
-						break;
-					<% } %>
-				</div>
-			</script>
 		</content>
-
 		<footer>
-			<ul>
-				<li>Home</li>
-				<li>Veranstaltungen</li>
-			</ul>
 		</footer>
-	</div> <!--! end of #container -->
 </body>
 </html>

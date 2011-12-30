@@ -6,16 +6,22 @@ exports.appData =
 			"subpages": [
 				{
 				"title": "second session"
+				"name" : "session2"
+				"type": "single"
 				"text": "a advanced tutorial session"
 				"id": 3
 				}
 				{
 				"title": "First Session"
+				"name" : "session1"
+				"type": "single"
 				"text": "A first session introducing our new platform"
 				"id": 2
 				}
 				{
 				"title": "Keynote"
+				"name" : "keynote"
+				"type": "single"
 				"text": "a very interesting Keynote by our new Tech Evangelist Heinz"
 				"id": 1
 				}]

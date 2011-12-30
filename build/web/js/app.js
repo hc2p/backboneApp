@@ -11276,6 +11276,271 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
 
 }).call(this);
 
+/*!
+ * Add to Homescreen v1.0.8 ~ Copyright (c) 2011 Matteo Spinelli, http://cubiq.org
+ * Released under MIT license, http://cubiq.org/license
+ */
+(function(){
+var nav = navigator,
+	isIDevice = (/iphone|ipod|ipad/gi).test(nav.platform),
+	isIPad = (/ipad/gi).test(nav.platform),
+	isRetina = 'devicePixelRatio' in window && window.devicePixelRatio > 1,
+	isSafari = nav.appVersion.match(/Safari/gi),
+	hasHomescreen = 'standalone' in nav && isIDevice,
+	isStandalone = hasHomescreen && nav.standalone,
+	OSVersion = nav.appVersion.match(/OS \d+_\d+/g),
+	platform = nav.platform.split(' ')[0],
+	language = nav.language.replace('-', '_'),
+	startY = 0,
+	startX = 0,
+	expired = 'localStorage' in window && typeof localStorage.getItem === 'function' ? localStorage.getItem('_addToHome') : null,
+	theInterval, closeTimeout, el, i, l,
+	options = {
+		animationIn: 'drop',		// drop || bubble || fade
+		animationOut: 'fade',		// drop || bubble || fade
+		startDelay: 2000,			// 2 seconds from page load before the balloon appears
+		lifespan: 20000,			// 20 seconds before it is automatically destroyed
+		bottomOffset: 14,			// Distance of the balloon from bottom
+		expire: 0,					// Minutes to wait before showing the popup again (0 = always displayed)
+		message: '',				// Customize your message or force a language ('' = automatic)
+		disableLoading: false,		// Disable loading of balloon
+		touchIcon: false,			// Display the touch icon
+		arrow: true,				// Display the balloon arrow
+		iterations:100				// Internal/debug use
+	},
+	/* Message in various languages, en_us is the default if a language does not exist */
+	intl = {
+		ca_es: 'Per instal·lar aquesta aplicació al vostre %device premeu %icon i llavors <strong>Afegir a pantalla d\'inici</strong>.',
+		da_dk: 'Tilføj denne side til din %device: tryk på %icon og derefter <strong>Tilføj til hjemmeskærm</strong>.',
+		de_de: 'Installieren Sie diese App auf Ihrem %device: %icon antippen und dann <strong>Zum Home-Bildschirm</strong>.',
+		el_gr: 'Εγκαταστήσετε αυτήν την Εφαρμογή στήν συσκευή σας %device: %icon μετά πατάτε <strong>Προσθήκη σε Αφετηρία</strong>.',
+		en_us: 'Install this web app on your %device: tap %icon and then <strong>Add to Home Screen</strong>.',
+		es_es: 'Para instalar esta app en su %device, pulse %icon y seleccione <strong>Añadir a pantalla de inicio</strong>.',
+		fi_fi: 'Asenna tämä web-sovellus laitteeseesi %device: paina %icon ja sen jälkeen valitse <strong>Lisää Koti-valikkoon</strong>.',
+		fr_fr: 'Ajoutez cette application sur votre %device en cliquant sur %icon, puis <strong>Ajouter à l\'écran d\'accueil</strong>.',
+		he_il: '<span dir="rtl">התקן אפליקציה זו על ה-%device שלך: הקש %icon ואז <strong>הוסף למסך הבית</strong>.</span>',
+		hu_hu: 'Telepítse ezt a web-alkalmazást az Ön %device-jára: nyomjon a %icon-ra majd a <strong>Főképernyőhöz adás</strong> gombra.',
+		it_it: 'Installa questa applicazione sul tuo %device: premi su %icon e poi <strong>Aggiungi a Home</strong>.',
+		ja_jp: 'このウェブアプリをあなたの%deviceにインストールするには%iconをタップして<strong>ホーム画面に追加</strong>を選んでください。',
+		ko_kr: '%device에 웹앱을 설치하려면 %icon을 터치 후 "홈화면에 추가"를 선택하세요',
+		nb_no: 'Installer denne appen på din %device: trykk på %icon og deretter <strong>Legg til på Hjem-skjerm</strong>',
+		nl_nl: 'Installeer deze webapp op uw %device: tik %icon en dan <strong>Zet in beginscherm</strong>.',
+		pt_br: 'Instale este web app em seu %device: aperte %icon e selecione <strong>Adicionar à Tela Inicio</strong>.',
+		pt_pt: 'Para instalar esta aplicação no seu %device, prima o %icon e depois o <strong>Adicionar ao ecrã principal</strong>.',
+		ru_ru: 'Установите это веб-приложение на ваш %device: нажмите %icon, затем <strong>Добавить в «Домой»</strong>.',
+		sv_se: 'Lägg till denna webbapplikation på din %device: tryck på %icon och därefter <strong>Lägg till på hemskärmen</strong>.',
+		th_th: 'ติดตั้งเว็บแอพฯ นี้บน %device ของคุณ: แตะ %icon และ <strong>เพิ่มที่หน้าจอโฮม</strong>',
+		tr_tr: '%device için bu uygulamayı kurduktan sonra %icon simgesine dokunarak <strong>Ev Ekranına Ekle</strong>yin.',
+		zh_cn: '您可以将此应用程式安装到您的 %device 上。请按 %icon 然后点选<strong>添加至主屏幕</strong>。',
+		zh_tw: '您可以將此應用程式安裝到您的 %device 上。請按 %icon 然後點選<strong>加入主畫面螢幕</strong>。'
+	};
+
+OSVersion = OSVersion ? OSVersion[0].replace(/[^\d_]/g,'').replace('_','.')*1 : 0;
+expired = expired == 'null' ? 0 : expired*1;
+
+// Merge options
+if (window.addToHomeConfig) {
+	for (i in window.addToHomeConfig) {
+		options[i] = window.addToHomeConfig[i];
+	}
+}
+
+// Is it expired?
+if (!options.expire || expired < new Date().getTime()) {
+	expired = 0;
+}
+
+/* Bootstrap */
+if (hasHomescreen && !expired && !isStandalone && isSafari && !options.disableLoading) {
+	document.addEventListener('DOMContentLoaded', ready, false);
+	window.addEventListener('load', loaded, false);
+}
+
+
+/* on DOM ready */
+function ready () {
+	document.removeEventListener('DOMContentLoaded', ready, false);
+
+	var div = document.createElement('div'),
+		close,
+		link = options.touchIcon ? document.querySelectorAll('head link[rel=apple-touch-icon],head link[rel=apple-touch-icon-precomposed]') : [],
+		sizes, touchIcon = '';
+
+	div.id = 'addToHomeScreen';
+	div.style.cssText += 'position:absolute;-webkit-transition-property:-webkit-transform,opacity;-webkit-transition-duration:0;-webkit-transform:translate3d(0,0,0);';
+	div.style.left = '-9999px';		// Hide from view at startup
+
+	// Localize message
+	if (options.message in intl) {		// You may force a language despite the user's locale
+		language = options.message;
+		options.message = '';
+	}
+	if (options.message == '') {		// We look for a suitable language (defaulted to en_us)
+		options.message = language in intl ? intl[language] : intl['en_us'];
+	}
+
+	// Search for the apple-touch-icon
+	if (link.length) {
+		for (i=0, l=link.length; i<l; i++) {
+			sizes = link[i].getAttribute('sizes');
+
+			if (sizes) {
+				if (isRetina && sizes == '114x114') { 
+					touchIcon = link[i].href;
+					break;
+				}
+			} else {
+				touchIcon = link[i].href;
+			}
+		}
+
+		touchIcon = '<span style="background-image:url(' + touchIcon + ')" class="touchIcon"></span>';
+	}
+
+	div.className = (isIPad ? 'ipad' : 'iphone') + (touchIcon ? ' wide' : '');
+	div.innerHTML = touchIcon + options.message.replace('%device', platform).replace('%icon', OSVersion >= 4.2 ? '<span class="share"></span>' : '<span class="plus">+</span>') + (options.arrow ? '<span class="arrow"></span>' : '') + '<span class="close">\u00D7</span>';
+
+	document.body.appendChild(div);
+	el = div;
+
+	// Add the close action
+	close = el.querySelector('.close');
+	if (close) close.addEventListener('click', addToHomeClose, false);
+
+	// Add expire date to the popup
+	if (options.expire) localStorage.setItem('_addToHome', new Date().getTime() + options.expire*60*1000);
+}
+
+
+/* on window load */
+function loaded () {
+	window.removeEventListener('load', loaded, false);
+
+	setTimeout(function () {
+		var duration;
+		
+		startY = isIPad ? window.scrollY : window.innerHeight + window.scrollY;
+		startX = isIPad ? window.scrollX : Math.round((window.innerWidth - el.offsetWidth)/2) + window.scrollX;
+
+		el.style.top = isIPad ? startY + options.bottomOffset + 'px' : startY - el.offsetHeight - options.bottomOffset + 'px';
+		el.style.left = isIPad ? startX + (OSVersion >=5 ? 160 : 208) - Math.round(el.offsetWidth/2) + 'px' : startX + 'px';
+
+		switch (options.animationIn) {
+			case 'drop':
+				if (isIPad) {
+					duration = '0.6s';
+					el.style.webkitTransform = 'translate3d(0,' + -(window.scrollY + options.bottomOffset + el.offsetHeight) + 'px,0)';
+				} else {
+					duration = '0.9s';
+					el.style.webkitTransform = 'translate3d(0,' + -(startY + options.bottomOffset) + 'px,0)';
+				}
+				break;
+			case 'bubble':
+				if (isIPad) {
+					duration = '0.6s';
+					el.style.opacity = '0';
+					el.style.webkitTransform = 'translate3d(0,' + (startY + 50) + 'px,0)';
+				} else {
+					duration = '0.6s';
+					el.style.webkitTransform = 'translate3d(0,' + (el.offsetHeight + options.bottomOffset + 50) + 'px,0)';
+				}
+				break;
+			default:
+				duration = '1s';
+				el.style.opacity = '0';
+		}
+
+		setTimeout(function () {
+			el.style.webkitTransitionDuration = duration;
+			el.style.opacity = '1';
+			el.style.webkitTransform = 'translate3d(0,0,0)';
+			el.addEventListener('webkitTransitionEnd', transitionEnd, false);
+		}, 0);
+
+		closeTimeout = setTimeout(addToHomeClose, options.lifespan);
+	}, options.startDelay);
+}
+
+function transitionEnd () {
+	el.removeEventListener('webkitTransitionEnd', transitionEnd, false);
+	el.style.webkitTransitionProperty = '-webkit-transform';
+	el.style.webkitTransitionDuration = '0.2s';
+
+	if (closeTimeout) {		// Standard loop
+		clearInterval(theInterval);
+		theInterval = setInterval(setPosition, options.iterations);
+	} else {				// We are closing
+		el.parentNode.removeChild(el);
+	}
+}
+
+function setPosition () {
+	var matrix = new WebKitCSSMatrix(window.getComputedStyle(el, null).webkitTransform),
+		posY = isIPad ? window.scrollY - startY : window.scrollY + window.innerHeight - startY,
+		posX = isIPad ? window.scrollX - startX : window.scrollX + Math.round((window.innerWidth - el.offsetWidth)/2) - startX;
+
+	if (posY == matrix.m42 && posX == matrix.m41) return;
+
+	clearInterval(theInterval);
+	el.removeEventListener('webkitTransitionEnd', transitionEnd, false);
+
+	setTimeout(function () {
+		el.addEventListener('webkitTransitionEnd', transitionEnd, false);
+		el.style.webkitTransform = 'translate3d(' + posX + 'px,' + posY + 'px,0)';
+	}, 0);
+}
+
+function addToHomeClose () {
+	clearInterval(theInterval);
+	clearTimeout(closeTimeout);
+	closeTimeout = null;
+	el.removeEventListener('webkitTransitionEnd', transitionEnd, false);
+	
+	var posY = isIPad ? window.scrollY - startY : window.scrollY + window.innerHeight - startY,
+		posX = isIPad ? window.scrollX - startX : window.scrollX + Math.round((window.innerWidth - el.offsetWidth)/2) - startX,
+		opacity = '1',
+		duration = '0',
+		close = el.querySelector('.close');
+
+	if (close) close.removeEventListener('click', addToHomeClose, false);
+
+	el.style.webkitTransitionProperty = '-webkit-transform,opacity';
+
+	switch (options.animationOut) {
+		case 'drop':
+			if (isIPad) {
+				duration = '0.4s';
+				opacity = '0';
+				posY = posY + 50;
+			} else {
+				duration = '0.6s';
+				posY = posY + el.offsetHeight + options.bottomOffset + 50;
+			}
+			break;
+		case 'bubble':
+			if (isIPad) {
+				duration = '0.8s';
+				posY = posY - el.offsetHeight - options.bottomOffset - 50;
+			} else {
+				duration = '0.4s';
+				opacity = '0';
+				posY = posY - 50;
+			}
+			break;
+		default:
+			duration = '0.8s';
+			opacity = '0';
+	}
+
+	el.addEventListener('webkitTransitionEnd', transitionEnd, false);
+	el.style.opacity = opacity;
+	el.style.webkitTransitionDuration = duration;
+	el.style.webkitTransform = 'translate3d(' + posX + 'px,' + posY + 'px,0)';
+}
+
+/* Public functions */
+window.addToHomeClose = addToHomeClose;
+})();
 /**
  * Backbone localStorage Adapter v1.0
  * https://github.com/jeromegn/Backbone.localStorage
@@ -11436,14 +11701,20 @@ Backbone.sync = function(method, model, options, error) {
         "subpages": [
           {
             "title": "second session",
+            "name": "session2",
+            "type": "single",
             "text": "a advanced tutorial session",
             "id": 3
           }, {
             "title": "First Session",
+            "name": "session1",
+            "type": "single",
             "text": "A first session introducing our new platform",
             "id": 2
           }, {
             "title": "Keynote",
+            "name": "keynote",
+            "type": "single",
             "text": "a very interesting Keynote by our new Tech Evangelist Heinz",
             "id": 1
           }
@@ -11465,49 +11736,47 @@ Backbone.sync = function(method, model, options, error) {
     ]
   };
 }, "collections/page_collection": function(exports, require, module) {(function() {
-  var Page, appData;
+  var PageModel;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
-  Page = require('models/page_model').Page;
+  PageModel = require('models/page_model').PageModel;
 
-  appData = require('collections/app_data').appData;
+  exports.PageCollection = (function() {
 
-  exports.Pages = (function() {
+    __extends(PageCollection, Backbone.Collection);
 
-    __extends(Pages, Backbone.Collection);
-
-    Pages.prototype.model = Page;
-
-    function Pages() {
-      Pages.__super__.constructor.apply(this, arguments);
-      this.reset(appData.pages);
+    function PageCollection() {
+      PageCollection.__super__.constructor.apply(this, arguments);
     }
 
-    Pages.prototype.getModelByName = function(name) {
+    PageCollection.prototype.model = PageModel;
+
+    PageCollection.prototype.getModelByName = function(name) {
       var _this = this;
-      console.log(name);
       return _.find(this.models, function(model) {
         return model.attributes.name === name;
       });
     };
 
-    /*
-    	initialize: ->
-    		@localStorage = new Store "venues"
-    */
+    PageCollection.prototype.initialize = function() {
+      return this.localStorage = new Store("pages");
+    };
 
-    Pages.prototype.url = '/pages';
+    PageCollection.prototype.url = '/pages';
 
-    return Pages;
+    return PageCollection;
 
   })();
 
 }).call(this);
 }, "main": function(exports, require, module) {(function() {
-  var AppView, MainRouter, Page, Pages;
+  var AppView, MainRouter, PageCollection, appData;
+  var __slice = Array.prototype.slice;
 
-  window.log = function(val) {
-    return console.log(val);
+  window.log = function() {
+    var val;
+    val = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return console.log.apply(console, val);
   };
 
   window.app = {
@@ -11519,19 +11788,19 @@ Backbone.sync = function(method, model, options, error) {
     }
   };
 
-  Page = require('models/page_model').Page;
-
-  Pages = require('collections/page_collection').Pages;
+  PageCollection = require('collections/page_collection').PageCollection;
 
   MainRouter = require('routers/main_router').MainRouter;
 
   AppView = require('views/app_view').AppView;
 
+  appData = require('collections/app_data').appData;
+
   Backbone.serverSync = Backbone.sync;
 
   $(document).ready(function() {
     app.initialize = function() {
-      app.collections.pages = new Pages();
+      app.collections.pages = new PageCollection(appData.pages);
       app.routers.main = new MainRouter();
       app.views.pages.app = new AppView({
         collection: app.collections.pages
@@ -11548,15 +11817,23 @@ Backbone.sync = function(method, model, options, error) {
 }, "models/page_model": function(exports, require, module) {(function() {
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
-  exports.Page = (function() {
+  exports.PageModel = (function() {
 
-    __extends(Page, Backbone.Model);
+    __extends(PageModel, Backbone.Model);
 
-    function Page() {
-      Page.__super__.constructor.apply(this, arguments);
+    function PageModel() {
+      PageModel.__super__.constructor.apply(this, arguments);
     }
 
-    Page.prototype.get = function(attr) {
+    PageModel.prototype.initialize = function() {
+      var PageCollection;
+      if ((this.get('subpages') != null)) {
+        PageCollection = require('collections/page_collection').PageCollection;
+        return this.subpages = new PageCollection(this.get('subpages'));
+      }
+    };
+
+    PageModel.prototype.get = function(attr) {
       if (typeof this[attr] === 'function') {
         return this[attr]();
       } else {
@@ -11564,16 +11841,18 @@ Backbone.sync = function(method, model, options, error) {
       }
     };
 
-    return Page;
+    return PageModel;
 
   })();
 
 }).call(this);
 }, "routers/main_router": function(exports, require, module) {(function() {
-  var PageView;
+  var ListView, PageView;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   PageView = require('views/page_view').PageView;
+
+  ListView = require('views/list_view').ListView;
 
   exports.MainRouter = (function() {
 
@@ -11584,22 +11863,49 @@ Backbone.sync = function(method, model, options, error) {
     }
 
     MainRouter.prototype.routes = {
-      "/page/:id": "showPage"
+      "/page/*subpages": "showDetailPage"
     };
 
-    MainRouter.prototype.showPage = function(id) {
-      var page, view, _ref;
-      console.log("route page " + id);
-      view = (_ref = app.views.pages) != null ? _ref[id] : void 0;
-      if (!(view != null)) {
-        log("create fresh view");
-        page = app.collections.pages.getModelByName(id);
-        view = app.views.pages[id] = new PageView({
-          model: page
+    MainRouter.prototype.showDetailPage = function(slug) {
+      var pageParam, pagesCollection, view;
+      var _this = this;
+      log("show detail-page '", slug, "'");
+      pageParam = slug.split("/");
+      view = app.views.pages;
+      pagesCollection = app.collections.pages;
+      return _.each(pageParam, function(pageId, index, list) {
+        var levelView, pageModel;
+        levelView = view[pageId];
+        if (levelView === null || levelView === void 0) {
+          pageModel = pagesCollection.getModelByName(pageId);
+          levelView = _this.getView(pageModel);
+          if (index < list.length - 1) levelView.subpages = {};
+        }
+        if (index < list.length - 1) {
+          view[pageId] = levelView;
+          view = levelView.subpages || {};
+          pageModel = pagesCollection.getModelByName(pageId);
+          pagesCollection = pageModel.subpages;
+        } else {
+          view = levelView;
+          view.render();
+          view.makeActive();
+        }
+        return _this;
+      });
+    };
+
+    MainRouter.prototype.getView = function(pageModel) {
+      var view;
+      if (pageModel.get('type') === 'single') {
+        return view = app.views.pages[pageModel.get("name")] = new PageView({
+          model: pageModel
         });
-        view.render();
+      } else if (pageModel.get('type') === 'list') {
+        return view = app.views.pages[pageModel.get("name")] = new ListView({
+          model: pageModel
+        });
       }
-      return view.makeActive();
     };
 
     return MainRouter;
@@ -11765,8 +12071,6 @@ Backbone.sync = function(method, model, options, error) {
     };
   }
   (function() {
-    (function() {
-      var subpage, _i, _len, _ref;
     
       __out.push('<div data-role="page" id="');
     
@@ -11780,35 +12084,135 @@ Backbone.sync = function(method, model, options, error) {
     
       __out.push(__sanitize(this.page.attributes.title));
     
-      __out.push('</h3>\n\t');
+      __out.push('</h3>\n\t<p>');
     
-      if (this.page.attributes.type === 'list') {
-        __out.push('\n\t\t<ul id="');
-        __out.push(__sanitize(this.page.attributes.name));
-        __out.push('-list">\n\t\t\t');
-        _ref = this.page.attributes.subpages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          subpage = _ref[_i];
-          __out.push('\n\t\t\t\t<li id="');
-          __out.push(__sanitize(subpage.name));
-          __out.push('-list-');
-          __out.push(__sanitize(subpage.id));
-          __out.push('">\n\t\t\t\t\t<h3>');
-          __out.push(__sanitize(subpage.title));
-          __out.push('</h3>\n\t\t\t\t\t<p>');
-          __out.push(__sanitize(subpage.date));
-          __out.push('</p>\n\t\t\t\t\t<input id="venueCheckBox');
-          __out.push(__sanitize(subpage.id));
-          __out.push('" class="venueCheckBox" type="checkbox" name="saved" />\n\t\t\t\t</li>\n\t\t\t');
-        }
-        __out.push('\n\t\t</ul>\n\t');
-      } else {
-        __out.push('\n\t\t<p>');
-        __out.push(__sanitize(this.page.attributes.text));
-        __out.push('</p>\n</div>');
-      }
+      __out.push(__sanitize(this.page.attributes.text));
     
-    }).call(this);
+      __out.push('</p>\n</div>');
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+}}, "templates/page_list": function(exports, require, module) {module.exports = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    
+      __out.push('<div data-role="page" id="');
+    
+      __out.push(__sanitize(this.page.attributes.name));
+    
+      __out.push('-');
+    
+      __out.push(__sanitize(this.page.attributes.type));
+    
+      __out.push('-page">\n\t<h3>');
+    
+      __out.push(__sanitize(this.page.attributes.title));
+    
+      __out.push('</h3>\n\t<ul id="');
+    
+      __out.push(__sanitize(this.page.attributes.name));
+    
+      __out.push('-list">\n\t</ul>\n</div>');
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+}}, "templates/page_list_entry": function(exports, require, module) {module.exports = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    
+      __out.push('<li id="page-');
+    
+      __out.push(__sanitize(this.parentPage.get('name')));
+    
+      __out.push('-');
+    
+      __out.push(__sanitize(this.page.get('name')));
+    
+      __out.push('">\n\t<h3>');
+    
+      __out.push(__sanitize(this.page.get('title')));
+    
+      __out.push('</h3>\n\t<p>');
+    
+      __out.push(__sanitize(this.page.get('date')));
+    
+      __out.push('</p>\n\t<!-- input id="venueCheckBox');
+    
+      __out.push(__sanitize(this.page.get('id')));
+    
+      __out.push('" class="venueCheckBox" type="checkbox" name="saved" / -->\n</li>\n');
     
   }).call(__obj);
   __obj.safe = __objSafe, __obj.escape = __escape;
@@ -11844,6 +12248,7 @@ Backbone.sync = function(method, model, options, error) {
       $('footer').html(footerTemplate({
         collection: this.collection
       }));
+      this.delegateEvents();
       return this;
     };
 
@@ -11852,55 +12257,184 @@ Backbone.sync = function(method, model, options, error) {
   })();
 
 }).call(this);
+}, "views/list_entry_view": function(exports, require, module) {(function() {
+  var SimplePageView, pageListEntryTemplate;
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  pageListEntryTemplate = require('templates/page_list_entry');
+
+  SimplePageView = require('views/simple_page_view').SimplePageView;
+
+  exports.ListEntryView = (function() {
+
+    __extends(ListEntryView, SimplePageView);
+
+    function ListEntryView() {
+      ListEntryView.__super__.constructor.apply(this, arguments);
+    }
+
+    ListEntryView.prototype.events = {
+      "click": "open"
+    };
+
+    ListEntryView.prototype.initialize = function() {
+      log("init listEntryView");
+      this.parentView = this.options.parentView;
+      return this.el = "#page-" + this.parentView.model.get('name') + "-" + this.model.get('name');
+    };
+
+    ListEntryView.prototype.render = function() {
+      if (!ListEntryView.__super__.render.apply(this, arguments)) return false;
+      log("render listEntryView");
+      $("ul", this.parentView.el).append(pageListEntryTemplate({
+        page: this.model,
+        parentPage: this.parentView.model
+      }));
+      return this.delegateEvents();
+    };
+
+    ListEntryView.prototype.open = function(el) {
+      var hash;
+      hash = "/" + el.currentTarget.id.replace("-", "/").replace("-", "/").replace("-", "/");
+      console.log("open venue detail: " + hash);
+      return app.routers.main.navigate(hash, true);
+    };
+
+    return ListEntryView;
+
+  })();
+
+}).call(this);
+}, "views/list_view": function(exports, require, module) {(function() {
+  var ListEntryView, MainRouter, PageModel, SimplePageView, pageListTemplate;
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  pageListTemplate = require('templates/page_list');
+
+  MainRouter = require('routers/main_router').MainRouter;
+
+  SimplePageView = require('views/simple_page_view').SimplePageView;
+
+  ListEntryView = require('views/list_entry_view').ListEntryView;
+
+  PageModel = require('models/page_model').PageModel;
+
+  exports.ListView = (function() {
+
+    __extends(ListView, SimplePageView);
+
+    function ListView() {
+      ListView.__super__.constructor.apply(this, arguments);
+    }
+
+    ListView.prototype.childViews = [];
+
+    ListView.prototype.initialize = function() {
+      log("init listView");
+      return ListView.__super__.initialize.call(this);
+    };
+
+    ListView.prototype.render = function() {
+      var _this = this;
+      if (!ListView.__super__.render.apply(this, arguments)) return false;
+      log("render listView");
+      $('content').append(pageListTemplate({
+        page: this.model
+      }));
+      _.each(this.model.subpages.models, function(listEntryModel, index) {
+        var listEntryView;
+        listEntryView = _this.childViews[listEntryModel.get('id')] = new ListEntryView({
+          model: listEntryModel,
+          parentView: _this
+        });
+        return listEntryView.render();
+      });
+      return this.delegateEvents();
+    };
+
+    return ListView;
+
+  })();
+
+}).call(this);
 }, "views/page_view": function(exports, require, module) {(function() {
-  var MainRouter, pageTemplate;
+  var MainRouter, SimplePageView, pageTemplate;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   pageTemplate = require('templates/page');
 
   MainRouter = require('routers/main_router').MainRouter;
 
+  SimplePageView = require('views/simple_page_view').SimplePageView;
+
   exports.PageView = (function() {
 
-    __extends(PageView, Backbone.View);
+    __extends(PageView, SimplePageView);
 
     function PageView() {
       PageView.__super__.constructor.apply(this, arguments);
     }
 
-    PageView.prototype.events = {
-      "click li": "open"
-    };
-
     PageView.prototype.initialize = function() {
-      console.log('page view init');
-      return this.el = '#' + this.model.get('name') + "-" + this.model.get('type') + '-page';
+      log("init pageView");
+      return PageView.__super__.initialize.call(this);
     };
 
     PageView.prototype.render = function() {
-      console.log('page-view render');
+      if (!PageView.__super__.render.apply(this, arguments)) return false;
+      console.log('render pageView');
       $('content').append(pageTemplate({
         page: this.model
       }));
+      this.delegateEvents();
       return this;
     };
 
-    PageView.prototype.open = function(el) {
-      var id;
-      id = el.target.id;
-      console.log("open venue detail: " + id);
-      return app.routers.main.navigate("venue-" + id, true);
-    };
-
-    PageView.prototype.makeActive = function() {
-      log("makeActive");
-      log(this);
-      log(this.el);
-      $(".ui-active-page").removeClass("ui-active-page");
-      return $(this.el).addClass("ui-active-page slideleft in");
-    };
-
     return PageView;
+
+  })();
+
+}).call(this);
+}, "views/simple_page_view": function(exports, require, module) {(function() {
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  exports.SimplePageView = (function() {
+
+    __extends(SimplePageView, Backbone.View);
+
+    function SimplePageView() {
+      SimplePageView.__super__.constructor.apply(this, arguments);
+    }
+
+    SimplePageView.prototype.initialize = function() {
+      return this.el = '#' + this.model.get('name') + "-" + this.model.get('type') + '-page';
+    };
+
+    SimplePageView.prototype.render = function() {
+      if (!this.isRendered()) {
+        log("view not rendered yet -> render", this);
+        return true;
+      } else {
+        log("view allready rendered yet -> not render", this);
+        return false;
+      }
+    };
+
+    SimplePageView.prototype.isRendered = function() {
+      if ($(this.el).length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    SimplePageView.prototype.makeActive = function() {
+      log("makeActive", this);
+      $(".ui-active-page").addClass('slideleft out').removeClass("ui-active-page in");
+      return $(this.el).removeClass('slideleft out').addClass("ui-active-page slideleft in");
+    };
+
+    return SimplePageView;
 
   })();
 

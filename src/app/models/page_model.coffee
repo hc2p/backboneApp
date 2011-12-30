@@ -1,4 +1,10 @@
-class exports.Page extends Backbone.Model
+
+class exports.PageModel extends Backbone.Model
+	
+	initialize: ->
+		if ( @.get('subpages')?)
+			PageCollection = require('collections/page_collection').PageCollection
+			@subpages = new PageCollection(@get('subpages'))
 	
 	get: (attr) ->
 		if (typeof this[attr] == 'function')

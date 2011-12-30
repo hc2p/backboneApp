@@ -1,31 +1,17 @@
 pageTemplate = require('templates/page')
 MainRouter = require('routers/main_router').MainRouter
+SimplePageView = require('views/simple_page_view').SimplePageView
 
-class exports.PageView extends Backbone.View
+class exports.PageView extends SimplePageView
 	
-	events: 
-		"click li" : "open"
-	
-	
-	initialize: -> 
-		console.log 'page view init'
-		@el = '#' + @model.get('name') + "-" + @model.get('type') + '-page'
-		
+	initialize: ->
+		log "init pageView"
+		super()
+			
 	render: -> 
-		console.log 'page-view render'
+		if not super
+			return false
+		console.log 'render pageView'
 		$('content').append pageTemplate(page : @model)
+		@delegateEvents()
 		@
-		
-	open : (el)->
-		id = el.target.id
-		console.log "open venue detail: " + id 
-		#app.redirectTo("#venue-" + id)
-		app.routers.main.navigate "venue-"+id, true
-	
-	makeActive: ->
-		log "makeActive"
-		log @
-		log @el
-		$(".ui-active-page").removeClass("ui-active-page")
-		$(@el).addClass("ui-active-page slideleft in")
-		

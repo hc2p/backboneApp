@@ -1,22 +1,15 @@
-Page = require('models/page_model').Page
-appData = require('collections/app_data').appData
+PageModel = require('models/page_model').PageModel
 
-class exports.Pages extends Backbone.Collection
+class exports.PageCollection extends Backbone.Collection
 	
-	model : Page
-	
-	constructor: ->
-		super
-		@reset(appData.pages)
+	model : PageModel
 		
 	getModelByName: (name) ->
-		console.log name
 		_.find @models, (model) =>
 			model.attributes.name == name
 	
-	###
 	initialize: ->
-		@localStorage = new Store "venues"
-	###
+		@localStorage = new Store "pages"
+	
 	
 	url : '/pages'
