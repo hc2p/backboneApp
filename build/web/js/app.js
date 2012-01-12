@@ -11714,9 +11714,30 @@ Backbone.sync = function(method, model, options, error) {
           }, {
             "title": "Keynote",
             "name": "keynote",
-            "type": "single",
+            "type": "list",
             "text": "a very interesting Keynote by our new Tech Evangelist Heinz",
-            "id": 1
+            "id": 1,
+            "subpages": [
+              {
+                "title": "second session",
+                "name": "session2",
+                "type": "single",
+                "text": "a advanced tutorial session",
+                "id": 3
+              }, {
+                "title": "First Session",
+                "name": "session1",
+                "type": "single",
+                "text": "A first session introducing our new platform",
+                "id": 2
+              }, {
+                "title": "Keynote",
+                "name": "keynote",
+                "type": "single",
+                "text": "a very interesting Keynote by our new Tech Evangelist Heinz",
+                "id": 1
+              }
+            ]
           }
         ],
         "type": "list",
@@ -11867,27 +11888,29 @@ Backbone.sync = function(method, model, options, error) {
     };
 
     MainRouter.prototype.showDetailPage = function(slug) {
-      var pageParam, pagesCollection, view;
+      var pageParam, pagesCollection, parentView, view;
       var _this = this;
       log("show detail-page '", slug, "'");
       pageParam = slug.split("/");
       view = app.views.pages;
+      parentView = null;
       pagesCollection = app.collections.pages;
       return _.each(pageParam, function(pageId, index, list) {
         var levelView, pageModel;
         levelView = view[pageId];
         if (levelView === null || levelView === void 0) {
           pageModel = pagesCollection.getModelByName(pageId);
-          levelView = _this.getView(pageModel);
+          levelView = _this.getView(pageModel, parentView);
           if (index < list.length - 1) levelView.subpages = {};
         }
         if (index < list.length - 1) {
-          view[pageId] = levelView;
+          parentView = view[pageId] = levelView;
           view = levelView.subpages || {};
           pageModel = pagesCollection.getModelByName(pageId);
           pagesCollection = pageModel.subpages;
         } else {
           view = levelView;
+          log("loop end, view = levelView", view);
           view.render();
           view.makeActive();
         }
@@ -11895,15 +11918,17 @@ Backbone.sync = function(method, model, options, error) {
       });
     };
 
-    MainRouter.prototype.getView = function(pageModel) {
+    MainRouter.prototype.getView = function(pageModel, parentView) {
       var view;
       if (pageModel.get('type') === 'single') {
         return view = app.views.pages[pageModel.get("name")] = new PageView({
-          model: pageModel
+          model: pageModel,
+          parentView: parentView
         });
       } else if (pageModel.get('type') === 'list') {
         return view = app.views.pages[pageModel.get("name")] = new ListView({
-          model: pageModel
+          model: pageModel,
+          parentView: parentView
         });
       }
     };
@@ -12074,13 +12099,9 @@ Backbone.sync = function(method, model, options, error) {
     
       __out.push('<div data-role="page" id="');
     
-      __out.push(__sanitize(this.page.attributes.name));
+      __out.push(__sanitize(this.id));
     
-      __out.push('-');
-    
-      __out.push(__sanitize(this.page.attributes.type));
-    
-      __out.push('-page">\n\t<h3>');
+      __out.push('">\n\t<h3>');
     
       __out.push(__sanitize(this.page.attributes.title));
     
@@ -12134,13 +12155,9 @@ Backbone.sync = function(method, model, options, error) {
     
       __out.push('<div data-role="page" id="');
     
-      __out.push(__sanitize(this.page.attributes.name));
+      __out.push(__sanitize(this.id));
     
-      __out.push('-');
-    
-      __out.push(__sanitize(this.page.attributes.type));
-    
-      __out.push('-page">\n\t<h3>');
+      __out.push('">\n\t<h3>');
     
       __out.push(__sanitize(this.page.attributes.title));
     
@@ -12192,13 +12209,9 @@ Backbone.sync = function(method, model, options, error) {
   }
   (function() {
     
-      __out.push('<li id="page-');
+      __out.push('<li id="');
     
-      __out.push(__sanitize(this.parentPage.get('name')));
-    
-      __out.push('-');
-    
-      __out.push(__sanitize(this.page.get('name')));
+      __out.push(__sanitize(this.id));
     
       __out.push('">\n\t<h3>');
     
@@ -12274,28 +12287,30 @@ Backbone.sync = function(method, model, options, error) {
     }
 
     ListEntryView.prototype.events = {
-      "click": "open"
+      "click": "openReferencedView"
     };
 
     ListEntryView.prototype.initialize = function() {
-      log("init listEntryView");
-      this.parentView = this.options.parentView;
-      return this.el = "#page-" + this.parentView.model.get('name') + "-" + this.model.get('name');
+      log("init listEntryView", this.options.parentView);
+      ListEntryView.__super__.initialize.call(this);
+      this.id += '-entry';
+      return this.el += '-entry';
     };
 
     ListEntryView.prototype.render = function() {
       if (!ListEntryView.__super__.render.apply(this, arguments)) return false;
       log("render listEntryView");
       $("ul", this.parentView.el).append(pageListEntryTemplate({
+        id: this.id,
         page: this.model,
         parentPage: this.parentView.model
       }));
       return this.delegateEvents();
     };
 
-    ListEntryView.prototype.open = function(el) {
+    ListEntryView.prototype.openReferencedView = function(el) {
       var hash;
-      hash = "/" + el.currentTarget.id.replace("-", "/").replace("-", "/").replace("-", "/");
+      hash = "/" + el.currentTarget.id.replace("-entry", "").replace(/-/g, "/");
       console.log("open venue detail: " + hash);
       return app.routers.main.navigate(hash, true);
     };
@@ -12339,13 +12354,15 @@ Backbone.sync = function(method, model, options, error) {
       if (!ListView.__super__.render.apply(this, arguments)) return false;
       log("render listView");
       $('content').append(pageListTemplate({
-        page: this.model
+        page: this.model,
+        id: this.id
       }));
       _.each(this.model.subpages.models, function(listEntryModel, index) {
         var listEntryView;
         listEntryView = _this.childViews[listEntryModel.get('id')] = new ListEntryView({
           model: listEntryModel,
-          parentView: _this
+          parentView: _this,
+          id: _this.id
         });
         return listEntryView.render();
       });
@@ -12384,7 +12401,8 @@ Backbone.sync = function(method, model, options, error) {
       if (!PageView.__super__.render.apply(this, arguments)) return false;
       console.log('render pageView');
       $('content').append(pageTemplate({
-        page: this.model
+        page: this.model,
+        id: this.id
       }));
       this.delegateEvents();
       return this;
@@ -12407,7 +12425,14 @@ Backbone.sync = function(method, model, options, error) {
     }
 
     SimplePageView.prototype.initialize = function() {
-      return this.el = '#' + this.model.get('name') + "-" + this.model.get('type') + '-page';
+      this.parentView = this.options.parentView;
+      if ((this.parentView != null)) {
+        this.el = this.parentView.el + "-" + this.model.get('name');
+        return this.id = this.parentView.id + "-" + this.model.get('name');
+      } else {
+        this.el = '#page-' + this.model.get('name');
+        return this.id = "page-" + this.model.get('name');
+      }
     };
 
     SimplePageView.prototype.render = function() {

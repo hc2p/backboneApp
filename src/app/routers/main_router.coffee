@@ -12,6 +12,7 @@ class exports.MainRouter extends Backbone.Router
 		pageParam = slug.split("/")
 		# all yet initialized views
 		view = app.views.pages
+		parentView = null
 		# all toplevel pages
 		pagesCollection = app.collections.pages
 		# loop over all params in the url
@@ -21,28 +22,35 @@ class exports.MainRouter extends Backbone.Router
 				#if view has not been initialized yet
 				if levelView == null or levelView == undefined
 					pageModel = pagesCollection.getModelByName pageId
-					levelView = @getView(pageModel)
+					levelView = @getView(pageModel, parentView)
 					if index < list.length - 1
 						#prepare subpages object
 						levelView.subpages = {}
 				
 				#prepare for next loop step
 				if index < list.length - 1
-					view[pageId] = levelView
+					parentView = view[pageId] = levelView
 					view = levelView.subpages || {}
 					pageModel = pagesCollection.getModelByName pageId
 					pagesCollection = pageModel.subpages
 				#loop end
 				else
 					view = levelView
+					log "loop end, view = levelView", view
 					view.render()
 					view.makeActive()
 					
 				@
 		)
 		
-	getView: (pageModel) ->
+	getView: (pageModel, parentView) ->
 		if pageModel.get('type') == 'single'
-			view = app.views.pages[pageModel.get("name")] = new PageView({model : pageModel})
+			view = app.views.pages[pageModel.get("name")] = new PageView(
+																		model 		: pageModel
+																		parentView 	: parentView
+																		)
 		else if pageModel.get('type') == 'list'
-			view = app.views.pages[pageModel.get("name")] = new ListView({model : pageModel})
+			view = app.views.pages[pageModel.get("name")] = new ListView(
+																		model 		: pageModel
+																		parentView 	: parentView
+																		)

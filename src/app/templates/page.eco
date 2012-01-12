@@ -1,4 +1,4 @@
-<div data-role="page" id="<%=@page.attributes.name%>-<%=@page.attributes.type%>-page">
+<div data-role="page" id="<%=@id%>">
 	<h3><%=@page.attributes.title%></h3>
 	<p><%=@page.attributes.text%></p>
 </div>

@@ -12,6 +12,9 @@ class exports.PageView extends SimplePageView
 		if not super
 			return false
 		console.log 'render pageView'
-		$('content').append pageTemplate(page : @model)
+		$('content').append pageTemplate(
+			page 	: @model
+			id 		: @id
+			)
 		@delegateEvents()
 		@
