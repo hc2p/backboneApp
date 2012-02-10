@@ -7,5 +7,5 @@ The project was build by using the glorious [brunch.io](http://brunch.io/) build
 
 The app initializes itself out of one json-file. This json contains all the data for the different pages. Nothing is stored to localStorage or websql/indexedDb, the caching is based on appCache only right now. This is done by a reference to the manifest.php file. It dynamically creates a manifest file used by the browser to cache all files needed.
 
-There is no intelligent update mechanism. The appCache is updated only if there is a change on the manifest-file. Its not sufficient that the different files change.
+There is no intelligent update mechanism. The appCache is updated only if there are changes on the files and a refresh is performed. The all files are downloaded again.
 Next versions should implement a way to check for and load updates on model-level.
