@@ -1,0 +1,5 @@
+<li id="<%=@id%>">
+	<h3><%=@page.get('title')%></h3>
+	<p><%=@page.get('date')%></p>
+	<!-- input id="venueCheckBox<%=@page.get('id')%>" class="venueCheckBox" type="checkbox" name="saved" / -->
+</li>

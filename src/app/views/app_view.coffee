@@ -5,6 +5,10 @@ class exports.AppView extends Backbone.View
 	
 	el : 'body'
 	
+	events: 
+		"touchstart .backbutton"		: "goBack"
+		"click .backbutton"		: "goBack"
+	
 	initialize: ->
 		log "init appView"
 		@render()
@@ -15,3 +19,6 @@ class exports.AppView extends Backbone.View
 		$('footer').html footerTemplate(collection : @collection)
 		@delegateEvents()
 		@
+		
+	goBack: ->
+		history.back()

@@ -1,0 +1,5 @@
+<div data-role="page" id="<%=@id%>">
+	<h3><%=@page.attributes.title%></h3>
+	<ul id="<%=@page.attributes.name%>-list">
+	</ul>
+</div>

@@ -1,0 +1,24 @@
+framework
+
+# try to replace jQuery with Zepto
+
+# learn to use Stylus better
+
+# ORM framework for backbone? 
+	-> Backbone.localstorage 
+
+
+
+app
+
+# backbutton
+# better basic iPhone styling
+	-> color settings
+	-> buttons
+	-> corners
+
+# persistence of user-settings
+# google maps
+# icons
+	-> loading screen
+	-> homescreen icon

@@ -6,4 +6,7 @@
 			</a>
 		</li>
 	<% end %>
+	<li class="backbutton">
+		zur&uuml;ck
+	</li>
 </ul>

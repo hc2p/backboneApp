@@ -12051,7 +12051,7 @@ Backbone.sync = function(method, model, options, error) {
         __out.push('\n\t\t\t</a>\n\t\t</li>\n\t');
       }
     
-      __out.push('\n</ul>');
+      __out.push('\n\t<li class="backbutton">\n\t\tzur&uuml;ck\n\t</li>\n</ul>');
     
     }).call(this);
     
@@ -12248,6 +12248,11 @@ Backbone.sync = function(method, model, options, error) {
 
     AppView.prototype.el = 'body';
 
+    AppView.prototype.events = {
+      "touchstart .backbutton": "goBack",
+      "click .backbutton": "goBack"
+    };
+
     AppView.prototype.initialize = function() {
       log("init appView");
       return this.render();
@@ -12263,6 +12268,10 @@ Backbone.sync = function(method, model, options, error) {
       }));
       this.delegateEvents();
       return this;
+    };
+
+    AppView.prototype.goBack = function() {
+      return history.back();
     };
 
     return AppView;
@@ -12287,6 +12296,7 @@ Backbone.sync = function(method, model, options, error) {
     }
 
     ListEntryView.prototype.events = {
+      "touchstart": "openReferencedView",
       "click": "openReferencedView"
     };
 

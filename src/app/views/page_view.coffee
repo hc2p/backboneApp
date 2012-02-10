@@ -4,6 +4,7 @@ SimplePageView = require('views/simple_page_view').SimplePageView
 
 class exports.PageView extends SimplePageView
 	
+	
 	initialize: ->
 		log "init pageView"
 		super()

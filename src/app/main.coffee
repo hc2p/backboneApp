@@ -31,3 +31,17 @@ $(document).ready ->
 
 	app.initialize()
 	Backbone.history.start()
+	
+	
+$(document).load ->
+	#Check if a new cache is available on page load.
+	window.applicationCache.addEventListener('updateready', (e) -> 
+		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
+			log "Browser downloaded a new app cache."
+			log "Swap it in and reload the page to get the new hotness."
+			window.applicationCache.swapCache()
+		if (confirm('A new version of this site is available. Load it?'))
+			window.location.reload()
+		else
+			log "Manifest didn't changed. Nothing new to server."
+	)

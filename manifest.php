@@ -5,7 +5,7 @@ $hashes = "";
 header('Content-Type: text/cache-manifest');
 echo "CACHE MANIFEST\n";
 
-echo "# Cache Manifest Version: 1.2";
+echo "# Cache Manifest Version: 1.1\n";
 
 foreach(new RecursiveIteratorIterator($dir) as $file) {
         if ($file->IsFile() &&
